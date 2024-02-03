@@ -71,4 +71,3 @@ class TestRecipe:
             with pytest.raises(IntegrityError):
                 db.session.add(recipe)
                 db.session.commit()
-

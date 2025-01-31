@@ -1,139 +1,74 @@
-
-#!/usr/bin/env python3
-
-from flask import request, session
-from flask_restful import Resource
+import pytest
 from sqlalchemy.exc import IntegrityError
 
-from config import app, db, api
-from models import User, Recipe
+from app import app
+from models import db, Recipe
 
-@app.before_request
-def check_if_logged_in():
-    open_access_list = [
-        'signup',
-        'login',
-        'check_session'
-    ]
+class TestRecipe:
+    '''User in models.py'''
 
-    if (request.endpoint) not in open_access_list and (not session.get('user_id')):
-        return {'error': '401 Unauthorized'}, 401
+        def test_has_attributes(self):
+                '''has attributes title, instructions, and minutes_to_complete.'''
+                        
+                                with app.app_context():
 
+                                            Recipe.query.delete()
+                                                        db.session.commit()
 
-class Signup(Resource):
-    
-    def post(self):
+                                                                    recipe = Recipe(
+                                                                                        title="Delicious Shed Ham",
+                                                                                                            instructions="""Or kind rest bred with am shed then. In""" + \
+                                                                                                                                    """ raptures building an bringing be. Elderly is detract""" + \
+                                                                                                                                                            """ tedious assured private so to visited. Do travelling""" + \
+                                                                                                                                                                                    """ companions contrasted it. Mistress strongly remember""" + \
+                                                                                                                                                                                                            """ up to. Ham him compass you proceed calling detract.""" + \
+                                                                                                                                                                                                                                    """ Better of always missed we person mr. September""" + \
+                                                                                                                                                                                                                                                            """ smallness northward situation few her certainty""" + \
+                                                                                                                                                                                                                                                                                    """ something.""",
+                                                                                                                                                                                                                                                                                                        minutes_to_complete=60,
+                                                                                                                                                                                                                                                                                                                            )
 
-        request_json = request.get_json()
+                                                                                                                                                                                                                                                                                                                                        db.session.add(recipe)
+                                                                                                                                                                                                                                                                                                                                                    db.session.commit()
 
-        username = request_json.get('username')
-        password = request_json.get('password')
-        image_url = request_json.get('image_url')
-        bio = request_json.get('bio')
+                                                                                                                                                                                                                                                                                                                                                                new_recipe = Recipe.query.filter(Recipe.title == "Delicious Shed Ham").first()
 
-        user = User(
-            username=username,
-            image_url=image_url,
-            bio=bio
-        )
+                                                                                                                                                                                                                                                                                                                                                                            assert new_recipe.title == "Delicious Shed Ham"
+                                                                                                                                                                                                                                                                                                                                                                                        assert new_recipe.instructions == """Or kind rest bred with am shed then. In""" + \
+                                                                                                                                                                                                                                                                                                                                                                                                            """ raptures building an bringing be. Elderly is detract""" + \
+                                                                                                                                                                                                                                                                                                                                                                                                                                """ tedious assured private so to visited. Do travelling""" + \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    """ companions contrasted it. Mistress strongly remember""" + \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        """ up to. Ham him compass you proceed calling detract.""" + \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            """ Better of always missed we person mr. September""" + \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                """ smallness northward situation few her certainty""" + \
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    """ something."""
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                assert new_recipe.minutes_to_complete == 60
 
-        # the setter will encrypt this
-        user.password_hash = password
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    def test_requires_title(self):
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            '''requires each record to have a title.'''
 
-        try:
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    with app.app_context():
 
-            db.session.add(user)
-            db.session.commit()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                Recipe.query.delete()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            db.session.commit()
 
-            session['user_id'] = user.id
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        recipe = Recipe()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                with pytest.raises(IntegrityError):
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                db.session.add(recipe)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                db.session.commit()
 
-            return user.to_dict(), 201
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    def test_requires_50_plus_char_instructions(self):
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            with app.app_context():
 
-        except IntegrityError:
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        Recipe.query.delete()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    db.session.commit()
 
-            return {'error': '422 Unprocessable Entity'}, 422
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                recipe = Recipe(
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                title="Generic Ham",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                instructions="idk lol")
 
-class CheckSession(Resource):
-
-    def get(self):
-        
-        user_id = session['user_id']
-        if user_id:
-            user = User.query.filter(User.id == user_id).first()
-            return user.to_dict(), 200
-        
-        return {}, 401
-
-
-class Login(Resource):
-    
-    def post(self):
-
-        request_json = request.get_json()
-
-        username = request_json.get('username')
-        password = request_json.get('password')
-
-        user = User.query.filter(User.username == username).first()
-
-        if user:
-            if user.authenticate(password):
-
-                session['user_id'] = user.id
-                return user.to_dict(), 200
-
-        return {'error': '401 Unauthorized'}, 401
-
-class Logout(Resource):
-
-    def delete(self):
-
-        session['user_id'] = None
-        
-        return {}, 204
-        
-
-class RecipeIndex(Resource):
-
-    def get(self):
-
-        user = User.query.filter(User.id == session['user_id']).first()
-        return [recipe.to_dict() for recipe in user.recipes], 200
-        
-        
-    def post(self):
-
-        request_json = request.get_json()
-
-        title = request_json['title']
-        instructions = request_json['instructions']
-        minutes_to_complete = request_json['minutes_to_complete']
-
-        try:
-
-            recipe = Recipe(
-                title=title,
-                instructions=instructions,
-                minutes_to_complete=minutes_to_complete,
-                user_id=session['user_id'],
-            )
-
-            db.session.add(recipe)
-            db.session.commit()
-
-            return recipe.to_dict(), 201
-
-        except IntegrityError:
-
-            return {'error': '422 Unprocessable Entity'}, 422
-
-
-api.add_resource(Signup, '/signup', endpoint='signup')
-api.add_resource(CheckSession, '/check_session', endpoint='check_session')
-api.add_resource(Login, '/login', endpoint='login')
-api.add_resource(Logout, '/logout', endpoint='logout')
-api.add_resource(RecipeIndex, '/recipes', endpoint='recipes')
-
-
-if __name__ == '__main__':
-    app.run(port=5555, debug=True)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            with pytest.raises(IntegrityError):
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            db.session.add(recipe)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            db.session.commit()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
